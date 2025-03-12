@@ -17,7 +17,6 @@ from pynput.mouse import Controller
 class Cursor(QWidget):
     def __init__(self):
         super().__init__()
-        print(QCursor().pixmap().size())
         self.mouse = Controller()
         self.image = QPixmap("resources/cursor.png").scaled(24,24,Qt.KeepAspectRatio,Qt.SmoothTransformation)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)

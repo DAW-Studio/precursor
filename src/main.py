@@ -52,19 +52,19 @@ class Slider(QSlider):
         for point in self.tracker.pauses:
             # Calculate the position of the snap point on the slider
             position = self.valueToPosition(point) 
-            painter.drawLine(position, 0, position, self.height())
+            painter.drawLine(position, self.height()/2, position, 2)
 
     def valueToPosition(self, value):
         # Converts the slider value to a position on the slider's axis
-        return int(self.width() * (value - self.minimum()+2) / (self.maximum()-2 - self.minimum()+2))
+        return int(self.width() * (value ) / (self.maximum()))
 
 
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(300,80)
+        self.setFixedSize(320,80)
         self.setContentsMargins(20,0,20,0)
 
         self.cursor = Cursor()
@@ -78,10 +78,15 @@ class Window(QMainWindow):
         self.main_widget.setContentsMargins(20,0,20,0)
         self.main_widget.setObjectName("main-widget")
 
-        self.time_entry = QLineEdit(str(self.tracker.duration))
-        self.time_entry.textEdited.connect(self.editDuration)
-        self.time_entry.setFixedWidth(26)
-        self.time_entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.track_duration_entry = QLineEdit(str(self.tracker.duration))
+        self.track_duration_entry.textEdited.connect(self.editTrackDuration)
+        self.track_duration_entry.setFixedWidth(40)
+        self.track_duration_entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.pause_duration_entry = QLineEdit(str(self.tracker.pause_duration))
+        self.pause_duration_entry.textEdited.connect(self.editPauseDuration)
+        self.pause_duration_entry.setFixedWidth(40)
+        self.pause_duration_entry.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.slider = Slider(self.tracker)
         self.slider.valueChanged.connect(self.moveCursor)
@@ -93,7 +98,8 @@ class Window(QMainWindow):
     
         self.main_widget.setLayout(VBoxLayout([
             HBoxLayout([
-                self.time_entry,
+                self.track_duration_entry,
+                self.pause_duration_entry,
                 self.slider
             ], spacing=5),
             HBoxLayout([
@@ -105,14 +111,19 @@ class Window(QMainWindow):
         self.setFocus()
     
 
-    def editDuration(self, edit):
-        self.tracker.duration = int(edit)
-        self.time_entry.setText(edit)
+    def editTrackDuration(self, edit):
+        self.tracker.duration = float(edit)
+        self.track_duration_entry.setText(edit)
+        self.tracker.saveConf()
+
+    def editPauseDuration(self, edit):
+        self.tracker.pause_duration = float(edit)
+        self.pause_duration_entry.setText(edit)
+        self.tracker.saveConf()
 
     def moveCursor(self, value):
-        print(self.tracker.pauses)
         closest_point = min(self.tracker.pauses, key=lambda x: abs(x - value))
-        if abs(value - closest_point) <= 5:
+        if abs(value - closest_point) <= 10:
             self.slider.setValue(closest_point)
             value = self.slider.value()
         x, y, t = self.tracker.timeline[value]
@@ -154,6 +165,7 @@ class Window(QMainWindow):
         self.cursor.hide()
         self.tracker.tracking = True
         self.tracker.timeline = []
+        self.tracker.pauses = [0]
         super().hide()
         
 
